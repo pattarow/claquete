@@ -1,0 +1,765 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14111f">
+<title>Claquete</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: cabine de cinema escura, abas inferiores (Quiz, Loja, Álbum), cartas 2:3 com moldura por raridade. */
+:root{
+  --bg:#14111f; --panel:#1d1a2f; --panel2:#262240; --line:#3a3558;
+  --fg:#f4efe6; --muted:#a39fbd; --accent:#ff5d73; --accent-ink:#2b0a11;
+  --good:#4cc38a; --bad:#ff7a7a;
+  --r0:#8e8aa6; --r1:#4cc38a; --r2:#4aa3ff; --r3:#b06cff; --r4:#ffc245;
+  --display:'Bebas Neue','Impact','Arial Narrow',sans-serif;
+  --body:'DM Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0 112px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+.app{max-width:560px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);font-weight:400;letter-spacing:.04em;margin:0}
+h2{font-size:30px;line-height:1.05}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0 12px}
+.logo{font-family:var(--display);font-size:30px;letter-spacing:.08em;line-height:1}
+.logo span{color:var(--accent)}
+.coins{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 14px 6px 8px;font-weight:700;font-variant-numeric:tabular-nums}
+.coin{width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe08a,#e0a21f);box-shadow:inset 0 0 0 2px rgba(0,0,0,.18)}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--panel);border-top:1px solid var(--line);
+  padding:8px max(16px,env(safe-area-inset-left,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-right,0px))}
+nav.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+nav.tabs button{background:transparent;border:0;color:var(--muted);font:700 13px var(--body);letter-spacing:.06em;text-transform:uppercase;padding:12px 8px;border-radius:10px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{background:var(--panel2);color:var(--fg);box-shadow:inset 0 -3px 0 var(--accent)}
+
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:13px 18px;font:700 15px var(--body);cursor:pointer;min-height:46px}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.btn.full{width:100%}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.stack{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat b{display:block;font-family:var(--display);font-size:28px;font-weight:400;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+
+/* Quiz */
+.bar{height:6px;background:var(--panel2);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.qhead{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.chip{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--line);border-radius:99px;padding:3px 10px;color:var(--muted)}
+.q{font-family:var(--display);font-size:32px;line-height:1.08;letter-spacing:.03em;text-wrap:balance}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{background:var(--panel);border:1px solid var(--line);color:var(--fg);border-radius:12px;padding:14px 16px;text-align:left;font:500 16px var(--body);cursor:pointer;min-height:52px}
+.opt:hover:not(:disabled){border-color:var(--muted)}
+.opt.ok{background:rgba(76,195,138,.16);border-color:var(--good)}
+.opt.no{background:rgba(255,122,122,.14);border-color:var(--bad)}
+.opt:disabled{cursor:default}
+.fb{min-height:24px;font-weight:700}
+.fb.ok{color:var(--good)} .fb.no{color:var(--bad)}
+
+/* Loja */
+.pack{position:relative;border-radius:16px;padding:22px 20px;background:linear-gradient(135deg,#ff5d73,#c23a6c 60%,#7b2b73);color:#fff;overflow:hidden}
+.pack::before,.pack::after{content:"";position:absolute;top:50%;width:26px;height:26px;border-radius:50%;background:var(--bg);transform:translateY(-50%)}
+.pack::before{left:-13px}.pack::after{right:-13px}
+.pack h3{font-size:38px;line-height:1}
+.pack .dash{border-top:2px dashed rgba(255,255,255,.45);margin:14px 0}
+.pack .sub{font-size:14px;opacity:.92}
+.odds{display:grid;gap:8px}
+.odd{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:center;font-size:14px}
+.odd i{width:12px;height:12px;border-radius:3px;background:var(--rc)}
+.odd b{font-variant-numeric:tabular-nums}
+.mile{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.mile:first-of-type{border-top:0}
+.mile.done{color:var(--good)}
+
+/* Álbum */
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.fchip{background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:7px 13px;font:600 13px var(--body);cursor:pointer}
+.fchip[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+.gbtn{background:none;border:0;padding:0;cursor:pointer;position:relative;display:block;width:100%;min-width:0;text-align:left;color:inherit}
+.cnt{position:absolute;right:6px;bottom:30px;z-index:3;background:rgba(0,0,0,.72);color:#fff;border-radius:99px;font:700 11px var(--body);padding:2px 7px}
+
+/* Carta */
+.card{--rc:var(--r0);--h:250;position:relative;width:100%;aspect-ratio:2/3;container-type:inline-size;border-radius:9% / 6%;overflow:hidden;
+  background:linear-gradient(165deg,hsl(var(--h) 52% 30%),hsl(var(--h) 60% 11%));
+  border:2px solid var(--rc);box-shadow:0 0 0 1px rgba(0,0,0,.5);color:#fff;display:block}
+.card .ci{display:flex;flex-direction:column;justify-content:space-between;height:100%;padding:7cqw}
+.card.r1{--rc:var(--r1)}.card.r2{--rc:var(--r2)}.card.r3{--rc:var(--r3)}.card.r4{--rc:var(--r4)}
+.card .top{display:flex;justify-content:space-between;align-items:center;font-size:7.5cqw;font-weight:700;letter-spacing:.08em;position:relative;z-index:1}
+.card .kind{opacity:.85}
+.card .glyph{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:66cqw;line-height:1;opacity:.17;pointer-events:none}
+.card .meta{position:relative;z-index:1}
+.card .title{font-family:var(--display);font-size:13cqw;line-height:1;letter-spacing:.03em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;text-wrap:balance}
+.card .sub{font-size:7.2cqw;opacity:.8;margin-top:2.5cqw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .rar{position:relative;z-index:1;display:flex;align-items:center;gap:2.5cqw;font-size:7cqw;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--rc);margin-top:3cqw}
+.card .rar i{width:3.4cqw;height:3.4cqw;background:var(--rc);transform:rotate(45deg)}
+.card.r3,.card.r4{box-shadow:0 0 14px color-mix(in srgb,var(--rc) 55%,transparent)}
+.card.r3::after,.card.r4::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,transparent 32%,rgba(255,255,255,.24) 49%,transparent 66%);background-size:260% 100%;animation:sheen 3.6s linear infinite}
+.card.r4{background:linear-gradient(165deg,hsl(var(--h) 60% 36%),hsl(calc(var(--h) + 30) 70% 12%))}
+@keyframes sheen{from{background-position:130% 0}to{background-position:-130% 0}}
+.card.locked{background:var(--panel);border-color:var(--line);box-shadow:none;color:var(--muted)}
+.card.locked .glyph{opacity:.55;font-size:52cqw}
+.card.locked .meta{display:none}
+.card.locked .rar{color:var(--rc);opacity:.7}
+
+/* Abertura de pacote */
+.ov{position:fixed;inset:0;z-index:40;background:rgba(10,8,18,.94);overflow-y:auto;
+  padding:calc(20px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.ov .box{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.reveal{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.flip{grid-column:span 2;width:100%;min-width:0;perspective:900px;aspect-ratio:2/3;border:0;background:none;padding:0;cursor:pointer;position:relative}
+.flip:nth-child(4){grid-column:2/span 2}.flip:nth-child(5){grid-column:4/span 2}
+.flip .in{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+.flip.on .in{transform:rotateY(180deg)}
+.flip .f{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.flip .front{transform:rotateY(180deg)}
+.flip .front .card{aspect-ratio:auto;height:100%}
+.flip .back{border-radius:9% / 6%;border:2px solid var(--line);display:grid;place-items:center;font-family:var(--display);font-size:42px;color:var(--accent);
+  background:repeating-linear-gradient(45deg,var(--panel),var(--panel) 8px,var(--panel2) 8px,var(--panel2) 16px)}
+.flip .tag{position:absolute;top:-8px;left:50%;transform:translateX(-50%);z-index:5;background:var(--accent);color:var(--accent-ink);font:700 11px var(--body);padding:2px 8px;border-radius:99px;white-space:nowrap}
+.flip .tag.dup{background:var(--panel2);color:var(--fg);border:1px solid var(--line)}
+
+.modal{position:fixed;inset:0;z-index:40;background:rgba(10,8,18,.9);display:grid;place-items:center;
+  padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.modal .mb{width:min(320px,100%);display:flex;flex-direction:column;gap:14px;max-height:100%;overflow-y:auto}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.facts dt{color:var(--muted)}.facts dd{margin:0;text-align:right}
+
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:50;background:var(--fg);color:var(--bg);font-weight:700;border-radius:99px;padding:10px 18px;max-width:calc(100% - 32px);text-align:center}
+.foot{font-size:12px;color:var(--muted);line-height:1.5}
+.link{background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;font-size:12px;padding:0}
+
+@media (prefers-reduced-motion:reduce){
+  .flip .in{transition:none}.card.r3::after,.card.r4::after{animation:none}.bar i{transition:none}
+}
+
+/* Pôsteres */
+.poster{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;display:block}
+.card.has-poster{background:#000}
+.card.has-poster::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(0,0,0,.62),transparent 24%,transparent 74%,rgba(0,0,0,.82))}
+.card.has-poster .glyph,.card.has-poster .meta{display:none}
+.card.has-poster .top,.card.has-poster .rar{z-index:2}
+.card.r3::after,.card.r4::after{z-index:3}
+.inp{width:100%;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font:500 14px var(--body);min-height:44px}
+.inp::placeholder{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="logo">CLAQUE<span>TE</span></div>
+    <div class="coins" aria-label="Moedas"><i class="coin"></i><span id="coins">0</span></div>
+  </header>
+
+  <main>
+    <section id="v-quiz" class="stack"></section>
+    <section id="v-loja" class="stack" hidden></section>
+    <section id="v-album" class="stack" hidden></section>
+  </main>
+  <p class="foot" style="margin-top:28px">Pôsteres e dados de filmes: TMDB. Este produto usa a API do TMDB, mas não é endossado nem certificado pelo TMDB. Pôsteres e dados de séries: TVmaze (CC BY-SA). Notas do IMDb são aproximadas.</p>
+</div>
+
+<nav class="tabs" aria-label="Seções"><div class="in" role="tablist">
+  <button role="tab" data-go="quiz">Quiz</button>
+  <button role="tab" data-go="loja">Loja</button>
+  <button role="tab" data-go="album">Álbum</button>
+</div></nav>
+<div id="layer"></div>
+
+<script>
+/*LOGIC_START*/
+// título|ano|F=filme S=série|gênero|nota IMDb aprox.|fama 1-5|direção/criação|protagonista
+const RAW = `
+Um Sonho de Liberdade|1994|F|Drama|9.3|5|Frank Darabont|Tim Robbins
+O Poderoso Chefão|1972|F|Crime|9.2|5|Francis Ford Coppola|Marlon Brando
+Batman: O Cavaleiro das Trevas|2008|F|Ação|9.0|5|Christopher Nolan|Christian Bale
+O Poderoso Chefão II|1974|F|Crime|9.0|4|Francis Ford Coppola|Al Pacino
+12 Homens e uma Sentença|1957|F|Drama|9.0|3|Sidney Lumet|Henry Fonda
+A Lista de Schindler|1993|F|Drama|9.0|4|Steven Spielberg|Liam Neeson
+O Senhor dos Anéis: O Retorno do Rei|2003|F|Fantasia|9.0|5|Peter Jackson|Elijah Wood
+Pulp Fiction: Tempo de Violência|1994|F|Crime|8.9|5|Quentin Tarantino|John Travolta
+O Senhor dos Anéis: A Sociedade do Anel|2001|F|Fantasia|8.9|5|Peter Jackson|Elijah Wood
+O Senhor dos Anéis: As Duas Torres|2002|F|Fantasia|8.8|5|Peter Jackson|Elijah Wood
+Três Homens em Conflito|1966|F|Faroeste|8.8|3|Sergio Leone|Clint Eastwood
+Forrest Gump|1994|F|Drama|8.8|5|Robert Zemeckis|Tom Hanks
+Clube da Luta|1999|F|Drama|8.8|5|David Fincher|Brad Pitt
+A Origem|2010|F|Ficção científica|8.8|5|Christopher Nolan|Leonardo DiCaprio
+Star Wars: O Império Contra-Ataca|1980|F|Ficção científica|8.7|4|Irvin Kershner|Mark Hamill
+Matrix|1999|F|Ficção científica|8.7|5|Lana e Lilly Wachowski|Keanu Reeves
+Os Bons Companheiros|1990|F|Crime|8.7|4|Martin Scorsese|Ray Liotta
+Interestelar|2014|F|Ficção científica|8.7|5|Christopher Nolan|Matthew McConaughey
+Um Estranho no Ninho|1975|F|Drama|8.7|4|Milos Forman|Jack Nicholson
+Seven: Os Sete Crimes Capitais|1995|F|Suspense|8.6|5|David Fincher|Brad Pitt
+O Silêncio dos Inocentes|1991|F|Suspense|8.6|5|Jonathan Demme|Jodie Foster
+A Vida é Bela|1997|F|Drama|8.6|4|Roberto Benigni|Roberto Benigni
+Cidade de Deus|2002|F|Crime|8.6|4|Fernando Meirelles|Alexandre Rodrigues
+Os Sete Samurais|1954|F|Ação|8.6|3|Akira Kurosawa|Toshiro Mifune
+Star Wars: Uma Nova Esperança|1977|F|Ficção científica|8.6|5|George Lucas|Mark Hamill
+O Resgate do Soldado Ryan|1998|F|Guerra|8.6|5|Steven Spielberg|Tom Hanks
+À Espera de um Milagre|1999|F|Drama|8.6|5|Frank Darabont|Tom Hanks
+O Exterminador do Futuro 2|1991|F|Ficção científica|8.6|4|James Cameron|Arnold Schwarzenegger
+Gladiador|2000|F|Ação|8.5|5|Ridley Scott|Russell Crowe
+De Volta para o Futuro|1985|F|Ficção científica|8.5|5|Robert Zemeckis|Michael J. Fox
+Psicose|1960|F|Terror|8.5|4|Alfred Hitchcock|Anthony Perkins
+O Pianista|2002|F|Drama|8.5|4|Roman Polanski|Adrien Brody
+Os Infiltrados|2006|F|Crime|8.5|4|Martin Scorsese|Leonardo DiCaprio
+O Rei Leão|1994|F|Animação|8.5|5|Roger Allers e Rob Minkoff|Matthew Broderick
+Parasita|2019|F|Suspense|8.5|4|Bong Joon-ho|Song Kang-ho
+Whiplash: Em Busca da Perfeição|2014|F|Drama|8.5|4|Damien Chazelle|Miles Teller
+Cinema Paradiso|1988|F|Drama|8.5|3|Giuseppe Tornatore|Philippe Noiret
+Casablanca|1942|F|Romance|8.5|4|Michael Curtiz|Humphrey Bogart
+Alien: O 8º Passageiro|1979|F|Terror|8.5|4|Ridley Scott|Sigourney Weaver
+O Grande Truque|2006|F|Suspense|8.5|4|Christopher Nolan|Christian Bale
+Django Livre|2012|F|Faroeste|8.5|5|Quentin Tarantino|Jamie Foxx
+Os Suspeitos|1995|F|Crime|8.5|4|Bryan Singer|Kevin Spacey
+Duna: Parte Dois|2024|F|Ficção científica|8.5|5|Denis Villeneuve|Timothée Chalamet
+A Viagem de Chihiro|2001|F|Animação|8.6|4|Hayao Miyazaki|Rumi Hiiragi
+Coringa|2019|F|Drama|8.4|5|Todd Phillips|Joaquin Phoenix
+Batman: O Cavaleiro das Trevas Ressurge|2012|F|Ação|8.4|5|Christopher Nolan|Christian Bale
+Vingadores: Ultimato|2019|F|Ação|8.4|5|Anthony e Joe Russo|Robert Downey Jr.
+Vingadores: Guerra Infinita|2018|F|Ação|8.4|5|Anthony e Joe Russo|Robert Downey Jr.
+Homem-Aranha: No Aranhaverso|2018|F|Animação|8.4|4|Bob Persichetti, Peter Ramsey e Rodney Rothman|Shameik Moore
+Bastardos Inglórios|2009|F|Guerra|8.4|5|Quentin Tarantino|Brad Pitt
+Amnésia|2000|F|Suspense|8.4|4|Christopher Nolan|Guy Pearce
+O Iluminado|1980|F|Terror|8.4|5|Stanley Kubrick|Jack Nicholson
+WALL-E|2008|F|Animação|8.4|5|Andrew Stanton|Ben Burtt
+Coco|2017|F|Animação|8.4|4|Lee Unkrich|Anthony Gonzalez
+Indiana Jones e os Caçadores da Arca Perdida|1981|F|Aventura|8.4|5|Steven Spielberg|Harrison Ford
+Scarface|1983|F|Crime|8.3|4|Brian De Palma|Al Pacino
+Cães de Aluguel|1992|F|Crime|8.3|4|Quentin Tarantino|Harvey Keitel
+Laranja Mecânica|1971|F|Ficção científica|8.3|4|Stanley Kubrick|Malcolm McDowell
+2001: Uma Odisseia no Espaço|1968|F|Ficção científica|8.3|4|Stanley Kubrick|Keir Dullea
+Oppenheimer|2023|F|Biografia|8.3|5|Christopher Nolan|Cillian Murphy
+Toy Story|1995|F|Animação|8.3|5|John Lasseter|Tom Hanks
+Toy Story 3|2010|F|Animação|8.3|4|Lee Unkrich|Tom Hanks
+Up: Altas Aventuras|2009|F|Animação|8.3|5|Pete Docter|Edward Asner
+O Auto da Compadecida|2000|F|Comédia|8.6|2|Guel Arraes|Matheus Nachtergaele
+Taxi Driver|1976|F|Crime|8.2|4|Martin Scorsese|Robert De Niro
+Cassino|1995|F|Crime|8.2|3|Martin Scorsese|Robert De Niro
+O Lobo de Wall Street|2013|F|Biografia|8.2|5|Martin Scorsese|Leonardo DiCaprio
+Ilha do Medo|2010|F|Suspense|8.2|5|Martin Scorsese|Leonardo DiCaprio
+Kill Bill: Volume 1|2003|F|Ação|8.2|5|Quentin Tarantino|Uma Thurman
+O Show de Truman|1998|F|Drama|8.2|5|Peter Weir|Jim Carrey
+Procurando Nemo|2003|F|Animação|8.2|5|Andrew Stanton|Albert Brooks
+Top Gun: Maverick|2022|F|Ação|8.2|5|Joseph Kosinski|Tom Cruise
+Homem-Aranha: Sem Volta para Casa|2021|F|Ação|8.2|5|Jon Watts|Tom Holland
+Batman Begins|2005|F|Ação|8.2|5|Christopher Nolan|Christian Bale
+Jurassic Park: Parque dos Dinossauros|1993|F|Aventura|8.2|5|Steven Spielberg|Sam Neill
+Mad Max: Estrada da Fúria|2015|F|Ação|8.1|5|George Miller|Tom Hardy
+Blade Runner: O Caçador de Androides|1982|F|Ficção científica|8.1|4|Ridley Scott|Harrison Ford
+Tubarão|1975|F|Suspense|8.1|5|Steven Spielberg|Roy Scheider
+Garota Exemplar|2014|F|Suspense|8.1|5|David Fincher|Ben Affleck
+Logan|2017|F|Ação|8.1|4|James Mangold|Hugh Jackman
+Piratas do Caribe: A Maldição do Pérola Negra|2003|F|Aventura|8.1|5|Gore Verbinski|Johnny Depp
+Harry Potter e as Relíquias da Morte: Parte 2|2011|F|Fantasia|8.1|5|David Yates|Daniel Radcliffe
+Divertida Mente|2015|F|Animação|8.1|5|Pete Docter|Amy Poehler
+Como Treinar o seu Dragão|2010|F|Animação|8.1|4|Dean DeBlois e Chris Sanders|Jay Baruchel
+Meu Amigo Totoro|1988|F|Animação|8.1|3|Hayao Miyazaki|
+Gran Torino|2008|F|Drama|8.1|4|Clint Eastwood|Clint Eastwood
+Duna|2021|F|Ficção científica|8.0|5|Denis Villeneuve|Timothée Chalamet
+Guardiões da Galáxia|2014|F|Ação|8.0|5|James Gunn|Chris Pratt
+Deadpool|2016|F|Ação|8.0|5|Tim Miller|Ryan Reynolds
+Os Vingadores|2012|F|Ação|8.0|5|Joss Whedon|Robert Downey Jr.
+Os Incríveis|2004|F|Animação|8.0|5|Brad Bird|Craig T. Nelson
+Zootopia: Essa Cidade é o Bicho|2016|F|Animação|8.0|4|Byron Howard e Rich Moore|Ginnifer Goodwin
+O Regresso|2015|F|Aventura|8.0|4|Alejandro G. Iñárritu|Leonardo DiCaprio
+La La Land: Cantando Estações|2016|F|Romance|8.0|5|Damien Chazelle|Ryan Gosling
+Tropa de Elite|2007|F|Crime|8.0|3|José Padilha|Wagner Moura
+Central do Brasil|1998|F|Drama|8.0|2|Walter Salles|Fernanda Montenegro
+Ainda Estou Aqui|2024|F|Drama|8.0|3|Walter Salles|Fernanda Torres
+Homem de Ferro|2008|F|Ação|7.9|5|Jon Favreau|Robert Downey Jr.
+Titanic|1997|F|Romance|7.9|5|James Cameron|Leonardo DiCaprio
+Avatar|2009|F|Ficção científica|7.9|5|James Cameron|Sam Worthington
+E.T.: O Extraterrestre|1982|F|Ficção científica|7.9|5|Steven Spielberg|Henry Thomas
+Bohemian Rhapsody|2018|F|Biografia|7.9|5|Bryan Singer|Rami Malek
+Shrek|2001|F|Animação|7.9|5|Andrew Adamson e Vicky Jenson|Mike Myers
+A Rede Social|2010|F|Biografia|7.8|4|David Fincher|Jesse Eisenberg
+Dunkirk|2017|F|Guerra|7.8|4|Christopher Nolan|Fionn Whitehead
+Questão de Tempo|2013|F|Romance|7.8|4|Richard Curtis|Domhnall Gleeson
+Corra!|2017|F|Terror|7.8|4|Jordan Peele|Daniel Kaluuya
+Missão: Impossível – Efeito Fallout|2018|F|Ação|7.7|4|Christopher McQuarrie|Tom Cruise
+Harry Potter e a Pedra Filosofal|2001|F|Fantasia|7.7|5|Chris Columbus|Daniel Radcliffe
+Se Beber, Não Case!|2009|F|Comédia|7.7|5|Todd Phillips|Bradley Cooper
+A Culpa é das Estrelas|2014|F|Romance|7.7|4|Josh Boone|Shailene Woodley
+Birdman|2014|F|Comédia|7.7|3|Alejandro G. Iñárritu|Michael Keaton
+Meu Malvado Favorito|2010|F|Animação|7.6|5|Pierre Coffin e Chris Renaud|Steve Carell
+Moana: Um Mar de Aventuras|2016|F|Animação|7.6|4|Ron Clements e John Musker|Auli'i Cravalho
+Doutor Estranho|2016|F|Ação|7.5|4|Scott Derrickson|Benedict Cumberbatch
+Invocação do Mal|2013|F|Terror|7.5|4|James Wan|Vera Farmiga
+Um Lugar Silencioso|2018|F|Terror|7.5|4|John Krasinski|Emily Blunt
+John Wick: De Volta ao Jogo|2014|F|Ação|7.4|4|Chad Stahelski e David Leitch|Keanu Reeves
+Frozen: Uma Aventura Congelante|2013|F|Animação|7.4|5|Chris Buck e Jennifer Lee|Kristen Bell
+Pantera Negra|2018|F|Ação|7.3|5|Ryan Coogler|Chadwick Boseman
+Hereditário|2018|F|Terror|7.3|4|Ari Aster|Toni Collette
+It: A Coisa|2017|F|Terror|7.3|5|Andy Muschietti|Bill Skarsgård
+Velozes e Furiosos|2001|F|Ação|6.8|5|Rob Cohen|Vin Diesel
+Barbie|2023|F|Comédia|6.8|5|Greta Gerwig|Margot Robbie
+Breaking Bad|2008|S|Crime|9.5|5|Vince Gilligan|Bryan Cranston
+Planeta Terra|2006|S|Documentário|9.4|3|Alastair Fothergill|David Attenborough
+Band of Brothers|2001|S|Guerra|9.4|4||Damian Lewis
+Game of Thrones|2011|S|Fantasia|9.2|5|David Benioff e D. B. Weiss|Kit Harington
+The Wire|2002|S|Crime|9.3|3|David Simon|Dominic West
+Chernobyl|2019|S|Drama|9.3|4|Craig Mazin|Jared Harris
+Avatar: A Lenda de Aang|2005|S|Animação|9.3|4|Michael Dante DiMartino e Bryan Konietzko|Zach Tyler Eisen
+The Sopranos|1999|S|Crime|9.2|4|David Chase|James Gandolfini
+Rick and Morty|2013|S|Animação|9.1|5|Justin Roiland e Dan Harmon|Justin Roiland
+Sherlock|2010|S|Crime|9.1|4|Mark Gatiss e Steven Moffat|Benedict Cumberbatch
+Ataque dos Titãs|2013|S|Animação|9.1|4|Hajime Isayama|
+Fullmetal Alchemist: Brotherhood|2009|S|Animação|9.1|3|Hiromu Arakawa|
+Death Note|2006|S|Animação|9.0|4|Tsugumi Ohba|
+Arcane|2021|S|Animação|9.0|4|Christian Linke e Alex Yee|Hailee Steinfeld
+The Office|2005|S|Comédia|9.0|5|Greg Daniels|Steve Carell
+Better Call Saul|2015|S|Drama|8.9|4|Vince Gilligan e Peter Gould|Bob Odenkirk
+Friends|1994|S|Comédia|8.9|5|David Crane e Marta Kauffman|Jennifer Aniston
+Seinfeld|1989|S|Comédia|8.9|4|Larry David e Jerry Seinfeld|Jerry Seinfeld
+One Piece|1999|S|Animação|8.9|4|Eiichiro Oda|
+Peaky Blinders|2013|S|Crime|8.8|5|Steven Knight|Cillian Murphy
+Succession|2018|S|Drama|8.8|4|Jesse Armstrong|Brian Cox
+Narcos|2015|S|Crime|8.8|5|Chris Brancato|Wagner Moura
+Ted Lasso|2020|S|Comédia|8.8|4||Jason Sudeikis
+Vinland Saga|2019|S|Animação|8.8|3|Makoto Yukimura|
+Stranger Things|2016|S|Ficção científica|8.7|5|Irmãos Duffer|Millie Bobby Brown
+Dark|2017|S|Ficção científica|8.7|4|Baran bo Odar e Jantje Friese|Louis Hofmann
+Black Mirror|2011|S|Ficção científica|8.7|4|Charlie Brooker|
+The Last of Us|2023|S|Drama|8.7|5|Craig Mazin e Neil Druckmann|Pedro Pascal
+The Mandalorian|2019|S|Ficção científica|8.7|5|Jon Favreau|Pedro Pascal
+The Boys|2019|S|Ação|8.7|5|Eric Kripke|Karl Urban
+Os Simpsons|1989|S|Animação|8.7|5|Matt Groening|Dan Castellaneta
+South Park|1997|S|Animação|8.7|4|Trey Parker e Matt Stone|
+House|2004|S|Drama|8.7|4|David Shore|Hugh Laurie
+Severance|2022|S|Ficção científica|8.7|3|Dan Erickson|Adam Scott
+Fleabag|2016|S|Comédia|8.7|3|Phoebe Waller-Bridge|Phoebe Waller-Bridge
+Dragon Ball Z|1989|S|Animação|8.7|4|Akira Toriyama|
+Chaves|1971|S|Comédia|8.7|3|Roberto Gómez Bolaños|Roberto Gómez Bolaños
+The Crown|2016|S|Drama|8.6|4|Peter Morgan|Claire Foy
+Dexter|2006|S|Crime|8.6|5|James Manos Jr.|Michael C. Hall
+The Bear|2022|S|Drama|8.6|4|Christopher Storer|Jeremy Allen White
+Jujutsu Kaisen|2020|S|Animação|8.6|3|Gege Akutami|
+Demon Slayer|2019|S|Animação|8.6|4|Koyoharu Gotouge|
+Vikings|2013|S|Ação|8.5|4|Michael Hirst|Travis Fimmel
+Modern Family|2009|S|Comédia|8.5|4|Christopher Lloyd e Steven Levitan|
+House of the Dragon|2022|S|Fantasia|8.4|4|Ryan Condal|Matt Smith
+Naruto|2002|S|Animação|8.4|4|Masashi Kishimoto|
+Brooklyn Nine-Nine|2013|S|Comédia|8.4|4|Dan Goor e Michael Schur|Andy Samberg
+How I Met Your Mother|2005|S|Comédia|8.3|5|Carter Bays e Craig Thomas|Josh Radnor
+Lost|2004|S|Aventura|8.3|5|J. J. Abrams|Matthew Fox
+Euphoria|2019|S|Drama|8.3|4|Sam Levinson|Zendaya
+La Casa de Papel|2017|S|Suspense|8.2|5|Álex Pina|Úrsula Corberó
+The Big Bang Theory|2007|S|Comédia|8.1|5|Chuck Lorre e Bill Prady|Jim Parsons
+The Walking Dead|2010|S|Terror|8.1|5|Frank Darabont|Andrew Lincoln
+Todo Mundo Odeia o Chris|2005|S|Comédia|8.1|3|Chris Rock e Ali LeRoi|Tyler James Williams
+Wandinha|2022|S|Fantasia|8.1|5|Alfred Gough e Miles Millar|Jenna Ortega
+Round 6|2021|S|Suspense|8.0|5|Hwang Dong-hyuk|Lee Jung-jae
+Grey's Anatomy|2005|S|Drama|7.6|5|Shonda Rhimes|Ellen Pompeo
+`;
+
+const slug=(t,y)=>t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+y;
+const C = RAW.trim().split('\n').map(l=>{const [t,y,k,g,r,p,d,s]=l.split('|');return {id:slug(t,y),t,y:+y,k,g,r:+r,p:+p,d:(d||'').trim(),s:(s||'').trim()}});
+const BYID = Object.fromEntries(C.map(c=>[c.id,c]));
+
+// Raridade: nota alta e fama alta = mais rara. Calculada separadamente para filmes e séries.
+const RAR=[
+  {k:'comum',n:'Comum',w:56,v:8},{k:'incomum',n:'Incomum',w:28,v:20},{k:'rara',n:'Rara',w:11,v:50},
+  {k:'epica',n:'Épica',w:4.2,v:150},{k:'lendaria',n:'Lendária',w:0.8,v:400}
+];
+const rScore=c=>0.6*Math.max(0,Math.min(1,(c.r-6.5)/3))+0.4*((c.p-1)/4);
+['F','S'].forEach(k=>{
+  const arr=C.filter(c=>c.k===k).sort((a,b)=>rScore(b)-rScore(a));
+  arr.forEach((c,i)=>{const q=i/arr.length;c.rar=q<0.05?4:q<0.17?3:q<0.40?2:q<0.70?1:0;});
+});
+const POOL=RAR.map((_,i)=>C.filter(c=>c.rar===i));
+
+const PRICE=150, PITY_RARE=4, PITY_EPIC=12;
+const MILES=[[10,100],[25,200],[50,350],[100,600],[150,1000]];
+const HUE={'Drama':250,'Crime':350,'Ação':14,'Ficção científica':190,'Fantasia':285,'Terror':0,'Animação':42,'Aventura':135,'Comédia':58,'Suspense':215,'Romance':330,'Guerra':100,'Biografia':28,'Faroeste':24,'Documentário':160};
+
+const rnd=n=>Math.floor(Math.random()*n);
+const pick=a=>a[rnd(a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const defaults=()=>({rev:0,coins:300,cards:{},packs:0,sinceRare:0,sinceEpic:0,daily:'',miles:[],rounds:0,hits:0,best:0});
+
+function rollRar(min){
+  let tot=0;for(let i=min;i<RAR.length;i++)tot+=RAR[i].w;
+  let x=Math.random()*tot;
+  for(let i=min;i<RAR.length;i++){x-=RAR[i].w;if(x<=0)return i}
+  return RAR.length-1;
+}
+// Sorteia um pacote de 5 cartas e atualiza o estado. 1ª carta é Incomum ou melhor; há garantias (pity).
+function drawPack(st){
+  const picks=[];
+  for(let i=0;i<5;i++)picks.push(rollRar(i===0?1:0));
+  const mx=()=>Math.max(...picks), low=()=>picks.indexOf(Math.min(...picks));
+  if(st.sinceEpic>=PITY_EPIC-1&&mx()<3)picks[low()]=rollRar(3);
+  if(st.sinceRare>=PITY_RARE-1&&mx()<2)picks[low()]=rollRar(2);
+  picks.sort((a,b)=>a-b);
+  const out=[],used=new Set();
+  for(const r of picks){
+    let c;for(let t=0;t<8;t++){c=pick(POOL[r]);if(!used.has(c.id))break}
+    used.add(c.id);
+    const had=st.cards[c.id]||0;st.cards[c.id]=had+1;
+    out.push({c,isNew:had===0,n:had+1});
+  }
+  const top=Math.max(...picks);
+  st.packs++;st.sinceRare=top>=2?0:st.sinceRare+1;st.sinceEpic=top>=3?0:st.sinceEpic+1;
+  return out;
+}
+function checkMiles(st){
+  const u=Object.keys(st.cards).length,got=[];
+  for(const [n,coins] of MILES){if(u>=n&&!st.miles.includes(n)){st.miles.push(n);st.coins+=coins;got.push([n,coins])}}
+  return got;
+}
+const dupeValue=st=>{let t=0;for(const id in st.cards){const c=BYID[id];if(c&&st.cards[id]>1)t+=(st.cards[id]-1)*RAR[c.rar].v}return t};
+const reward=streak=>10+Math.min(10,Math.max(0,streak-2)*2);
+
+// Perguntas do quiz
+const verbo=c=>c.k==='F'?'o filme':'a série';
+const Q={
+  year(){const c=pick(C),ys=new Set([c.y]),off=[-14,-10,-7,-4,-3,3,4,7,10,14];
+    let g=0;while(ys.size<4&&g++<60){const y=c.y+pick(off)+rnd(3)-1;if(y>=1930&&y<=2026)ys.add(y)}
+    if(ys.size<4)return null;
+    return {q:`Em que ano estreou ${verbo(c)} ${c.t}?`,opts:shuffle([...ys]).map(String),a:String(c.y),ids:[c.id],k:c.k};},
+  dir(){const c=pick(C.filter(x=>x.d));const w=shuffle([...new Set(C.filter(x=>x.d&&x.d!==c.d).map(x=>x.d))]).slice(0,3);
+    return {q:c.k==='F'?`Quem dirigiu ${c.t}?`:`Quem criou a série ${c.t}?`,opts:shuffle([c.d,...w]),a:c.d,ids:[c.id],k:c.k};},
+  star(){const c=pick(C.filter(x=>x.s));const w=shuffle([...new Set(C.filter(x=>x.s&&x.s!==c.s).map(x=>x.s))]).slice(0,3);
+    return {q:`Qual destes nomes é protagonista de ${c.t}?`,opts:shuffle([c.s,...w]),a:c.s,ids:[c.id],k:c.k};},
+  first(){for(let i=0;i<60;i++){const k=pick(['F','S']),pool=C.filter(x=>x.k===k),t=[pick(pool),pick(pool),pick(pool)].sort((a,b)=>a.y-b.y);
+      if(new Set(t.map(x=>x.id)).size<3)continue;if(t[1].y-t[0].y<4||t[2].y-t[1].y<4)continue;
+      return {q:`Qual destes estreou primeiro?`,opts:shuffle(t.map(x=>x.t)),a:t[0].t,ids:t.map(x=>x.id),k};}return null;},
+  rate(){for(let i=0;i<60;i++){const k=pick(['F','S']),pool=C.filter(x=>x.k===k),t=[pick(pool),pick(pool),pick(pool)].sort((a,b)=>b.r-a.r);
+      if(new Set(t.map(x=>x.id)).size<3)continue;if(t[0].r-t[1].r<0.5)continue;
+      return {q:`Qual destes tem a maior nota no IMDb?`,opts:shuffle(t.map(x=>x.t)),a:t[0].t,ids:t.map(x=>x.id),k};}return null;},
+  type(){const c=pick(C);return {q:`${c.t} é um filme ou uma série?`,opts:['Filme','Série'],a:c.k==='F'?'Filme':'Série',ids:[c.id],k:c.k};}
+};
+const QW=[['year',3],['dir',2],['star',2],['first',2],['rate',2],['type',1]];
+function newQuestion(used){
+  const bag=[];QW.forEach(([t,w])=>{for(let i=0;i<w;i++)bag.push(t)});
+  for(let i=0;i<40;i++){const q=Q[pick(bag)]();if(q&&!q.ids.some(id=>used.has(id)))return q}
+  return Q.year();
+}
+/*LOGIC_END*/
+
+// ---------- estado e persistência ----------
+let state=defaults(), dbDoc=null, cloud=false, saveTimer=null, saving=false, dirty=false;
+const norm=s=>Object.assign(defaults(),s||{});
+const LS='claquete.save.v1';
+function lsGet(){try{return JSON.parse(localStorage.getItem(LS))}catch(e){return null}}
+function lsSet(){try{localStorage.setItem(LS,JSON.stringify(state))}catch(e){}}
+async function flush(){
+  if(!dbDoc)return;if(saving){dirty=true;return}
+  saving=true;
+  try{await dbDoc.set({save:state,at:Date.now()});cloud=true}catch(e){cloud=false}
+  saving=false;if(dirty){dirty=false;flush()}
+}
+function commit(){state.rev++;lsSet();clearTimeout(saveTimer);saveTimer=setTimeout(flush,700);renderHeader()}
+
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const fmt=n=>n.toLocaleString('pt-BR');
+const today=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())};
+const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function toast(msg){
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=msg;document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2600);
+}
+function renderHeader(){$('#coins').textContent=fmt(state.coins)}
+
+// ---------- carta ----------
+function cardHTML(c,locked){
+  const h=HUE[c.g]??250,kind=c.k==='F'?'FILME':'SÉRIE',r=RAR[c.rar];
+  if(locked)return `<div class="card locked r${c.rar}"><div class="ci"><div class="glyph">?</div><div class="top"><span class="kind">${kind}</span></div><div class="meta"><div class="title">Carta bloqueada</div></div><div class="rar"><i></i>${r.n}</div></div></div>`;
+  const e=CONFIG.posters?posterCache[c.id]:null,u=e&&e.u;
+  if(CONFIG.posters&&!u)queuePoster(c);
+  const img=u?`<img class="poster" src="${esc(u)}" alt="" referrerpolicy="no-referrer" onerror="posterFailed(this)">`:'';
+  return `<div class="card r${c.rar}${u?' has-poster':''}" data-pid="${c.id}" style="--h:${h}">${img}<div class="ci"><div class="glyph">${esc(c.t.replace(/^(O|A|Os|As|Um|Uma)\s/,'')[0]||c.t[0])}</div><div class="top"><span class="kind">${kind}</span><span>★ ${c.r.toFixed(1)}</span></div><div class="meta"><div class="title">${esc(c.t)}</div><div class="sub">${c.y} · ${esc(c.g)}</div></div><div class="rar"><i></i>${r.n}</div></div></div>`;
+}
+
+// ---------- navegação ----------
+const VIEWS=['quiz','loja','album'];
+function show(name){
+  if(!VIEWS.includes(name))name='quiz';
+  VIEWS.forEach(v=>{$('#v-'+v).hidden=v!==name});
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.go===name)));
+  if(name==='loja')renderShop();
+  if(name==='album')renderAlbum();
+  if(name==='quiz'&&!quiz)renderQuizHome();
+  if(location.hash!=='#'+name)history.replaceState(null,'','#'+name);
+  scrollTo(0,0);
+}
+document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>show(b.dataset.go)));
+addEventListener('hashchange',()=>show(location.hash.slice(1)));
+
+// ---------- quiz ----------
+let quiz=null;
+function renderQuizHome(){
+  quiz=null;
+  const claimed=state.daily===today();
+  $('#v-quiz').innerHTML=`
+    <div class="stack">
+      <div><h2>Quiz de cinema</h2><p class="muted" style="margin-top:6px">10 perguntas por rodada. Cada acerto vale 10 moedas, e sequências de acertos rendem mais. Rodada perfeita dá +50. Sem tempo limite.</p></div>
+      <div class="stats">
+        <div class="stat"><b>${fmt(state.rounds)}</b><span>rodadas</span></div>
+        <div class="stat"><b>${fmt(state.hits)}</b><span>acertos</span></div>
+        <div class="stat"><b>${state.best}/10</b><span>melhor rodada</span></div>
+      </div>
+      <button class="btn full" id="start">Começar rodada</button>
+      <button class="btn ghost full" id="daily" ${claimed?'disabled':''}>${claimed?'Bônus de hoje já resgatado':'Resgatar bônus diário (+100 moedas)'}</button>
+      <div class="panel"><h3 style="font-size:22px;margin-bottom:6px">Pôsteres</h3>
+        <p class="muted small">Séries: pôsteres do TVmaze, sem chave. Filmes: ${getTmdbKey()?'pôsteres do TMDB ativos.':'cole abaixo o seu token do TMDB para ativar.'}</p>
+        <div class="stack" style="gap:10px;margin-top:12px">
+          <input class="inp" id="tk" type="password" autocomplete="off" placeholder="${getTmdbKey()?'Token salvo neste navegador':'Token do TMDB'}" aria-label="Token do TMDB">
+          <div class="row"><button class="btn ghost" id="tks">Salvar token</button>${getTmdbKey()?'<button class="btn ghost" id="tkr">Remover</button>':''}</div>
+        </div></div>
+      <p class="foot">Seu progresso é salvo neste aparelho. As notas do IMDb usadas no jogo são aproximadas.
+      <br><button class="link" id="reset">Recomeçar do zero</button></p>
+    </div>`;
+  $('#start').onclick=startQuiz;bindPosterPanel();
+  $('#daily').onclick=()=>{if(state.daily===today())return;state.daily=today();state.coins+=100;commit();toast('+100 moedas');renderQuizHome()};
+  $('#reset').onclick=function(){
+    if(this.dataset.sure){state=defaults();state.rev=Date.now();commit();toast('Progresso zerado');renderAll();return}
+    this.dataset.sure='1';this.textContent='Toque de novo para confirmar: isso apaga cartas e moedas';
+  };
+}
+function startQuiz(){quiz={i:0,hits:0,streak:0,earned:0,used:new Set(),q:null,done:false};nextQ()}
+function nextQ(){
+  if(quiz.i>=10)return endQuiz();
+  quiz.q=newQuestion(quiz.used);quiz.q.ids.forEach(id=>quiz.used.add(id));quiz.i++;quiz.done=false;drawQ();
+}
+function drawQ(){
+  const q=quiz.q;
+  $('#v-quiz').innerHTML=`
+    <div class="qhead"><span class="chip">Pergunta ${quiz.i} de 10</span><span class="muted small">Sequência ${quiz.streak} · +${fmt(quiz.earned)} nesta rodada</span></div>
+    <div class="bar" aria-hidden="true"><i style="width:${(quiz.i-1)*10}%"></i></div>
+    <div class="q">${esc(q.q)}</div>
+    <div class="opts">${q.opts.map((o,i)=>`<button class="opt" data-i="${i}">${esc(o)}</button>`).join('')}</div>
+    <div class="fb" id="fb" role="status"></div>
+    <button class="btn full" id="next" hidden>${quiz.i>=10?'Ver resultado':'Próxima'}</button>`;
+  document.querySelectorAll('.opt').forEach(b=>b.onclick=()=>answer(b));
+  $('#next').onclick=nextQ;
+}
+function answer(btn){
+  if(quiz.done)return;quiz.done=true;
+  const q=quiz.q,ok=btn.textContent===q.a;
+  document.querySelectorAll('.opt').forEach(b=>{b.disabled=true;if(b.textContent===q.a)b.classList.add('ok')});
+  const fb=$('#fb');
+  if(ok){
+    quiz.streak++;quiz.hits++;const g=reward(quiz.streak);quiz.earned+=g;state.coins+=g;
+    fb.className='fb ok';fb.textContent='Certo! +'+g+' moedas'+(quiz.streak>=3?' (sequência de '+quiz.streak+')':'');
+  }else{
+    btn.classList.add('no');quiz.streak=0;fb.className='fb no';fb.textContent='Era: '+q.a;
+  }
+  commit();$('#next').hidden=false;$('#next').focus();
+}
+function endQuiz(){
+  let bonus=0;if(quiz.hits===10){bonus=50;quiz.earned+=bonus;state.coins+=bonus}
+  state.rounds++;state.hits+=quiz.hits;state.best=Math.max(state.best,quiz.hits);commit();
+  const r=quiz;quiz=null;
+  $('#v-quiz').innerHTML=`
+    <div class="stack">
+      <h2>Rodada concluída</h2>
+      <div class="panel"><div style="font-family:var(--display);font-size:56px;line-height:1">${r.hits}/10</div>
+        <p class="muted" style="margin-top:6px">Você ganhou <b style="color:var(--fg)">${fmt(r.earned)} moedas</b>${bonus?' (inclui +50 de rodada perfeita)':''}.</p></div>
+      <button class="btn full" id="again">Jogar outra rodada</button>
+      <button class="btn ghost full" id="togo">Ir para a loja</button>
+    </div>`;
+  $('#again').onclick=startQuiz;$('#togo').onclick=()=>show('loja');
+}
+
+// ---------- loja ----------
+function renderShop(){
+  const sumW=RAR.reduce((a,r)=>a+r.w,0),u=Object.keys(state.cards).length,dv=dupeValue(state);
+  const left=(n,s)=>Math.max(1,n-s);
+  $('#v-loja').innerHTML=`
+    <div><h2>Loja</h2><p class="muted" style="margin-top:6px">Troque suas moedas por pacotes. Os números de sorte estão todos à mostra.</p></div>
+    <div class="pack"><h3>Pacote Claquete</h3><div class="dash"></div>
+      <div class="sub">5 cartas por pacote. A primeira é sempre Incomum ou melhor.</div></div>
+    <button class="btn full" id="buy" ${state.coins<PRICE?'disabled':''}>Abrir pacote · ${PRICE} moedas</button>
+    ${state.coins<PRICE?`<p class="muted small" style="margin-top:-8px">Faltam ${PRICE-state.coins} moedas. Jogue uma rodada do quiz para ganhar mais.</p>`:''}
+    <div class="panel"><h3 style="font-size:22px;margin-bottom:10px">Chance de cada carta</h3>
+      <div class="odds">${RAR.map((r,i)=>`<div class="odd" style="--rc:var(--r${i})"><i></i><span>${r.n} <span class="muted">(${POOL[i].length} cartas)</span></span><b>${(r.w/sumW*100).toFixed(1).replace('.',',')}%</b></div>`).join('')}</div>
+      <p class="muted small" style="margin-top:12px">Garantias: Rara ou melhor em até ${left(PITY_RARE,state.sinceRare)} pacote${left(PITY_RARE,state.sinceRare)>1?'s':''}. Épica ou melhor em até ${left(PITY_EPIC,state.sinceEpic)} pacote${left(PITY_EPIC,state.sinceEpic)>1?'s':''}. Filmes e séries com nota alta e muito conhecidos são os mais raros.</p></div>
+    <div class="panel"><h3 style="font-size:22px;margin-bottom:6px">Cartas repetidas</h3>
+      <p class="muted small">Fique com uma de cada e troque as extras por moedas.</p>
+      <button class="btn ghost full" id="recycle" style="margin-top:12px" ${dv?'':'disabled'}>${dv?'Trocar repetidas por +'+fmt(dv)+' moedas':'Você não tem repetidas'}</button></div>
+    <div class="panel"><h3 style="font-size:22px;margin-bottom:6px">Prêmios do álbum</h3>
+      ${MILES.map(([n,c])=>`<div class="mile ${state.miles.includes(n)?'done':''}"><span>${n} cartas diferentes${state.miles.includes(n)?' ✓':' ('+Math.min(u,n)+'/'+n+')'}</span><b>+${fmt(c)}</b></div>`).join('')}</div>`;
+  $('#buy').onclick=buyPack;
+  $('#recycle').onclick=()=>{const v=dupeValue(state);if(!v)return;for(const id in state.cards)if(state.cards[id]>1)state.cards[id]=1;state.coins+=v;commit();toast('+'+fmt(v)+' moedas');renderShop()};
+}
+function buyPack(){
+  if(state.coins<PRICE){toast('Moedas insuficientes');return}
+  state.coins-=PRICE;const res=drawPack(state),got=checkMiles(state);commit();reveal(res,got);
+}
+function reveal(res,got){
+  const L=$('#layer');
+  L.innerHTML=`<div class="ov" role="dialog" aria-label="Abrindo pacote"><div class="box">
+    <h2 style="text-align:center">Toque nas cartas para virar</h2>
+    <div class="reveal">${res.map((x,i)=>`<button class="flip r${x.c.rar}" data-i="${i}" aria-label="Carta ${i+1}, virada para baixo">
+      <div class="in"><div class="f back">?</div><div class="f front">${cardHTML(x.c)}</div></div>
+      <span class="tag ${x.isNew?'':'dup'}" hidden>${x.isNew?'NOVA':'x'+x.n}</span></button>`).join('')}</div>
+    <div class="stack" id="rf">
+      <button class="btn full" id="all">Virar todas</button>
+    </div></div></div>`;
+  const flips=[...L.querySelectorAll('.flip')];
+  const flipOne=f=>{if(f.classList.contains('on'))return;f.classList.add('on');const x=res[+f.dataset.i];f.querySelector('.tag').hidden=false;f.setAttribute('aria-label',x.c.t+', '+RAR[x.c.rar].n);check()};
+  const check=()=>{
+    if(flips.every(f=>f.classList.contains('on'))&&!$('#again2')){
+      const nw=res.filter(x=>x.isNew).length;
+      $('#rf').innerHTML=`<p class="muted" style="text-align:center">${nw} nova${nw===1?'':'s'} · ${5-nw} repetida${5-nw===1?'':'s'}</p>
+        ${got.map(([n,c])=>`<p style="text-align:center;color:var(--r4);font-weight:700">Prêmio do álbum: ${n} cartas diferentes! +${fmt(c)} moedas</p>`).join('')}
+        <button class="btn full" id="again2" ${state.coins<PRICE?'disabled':''}>Abrir outro · ${PRICE} moedas</button>
+        <button class="btn ghost full" id="close">Fechar</button>`;
+      $('#again2').onclick=()=>{L.innerHTML='';buyPack()};
+      $('#close').onclick=()=>{L.innerHTML='';renderShop();renderAlbum()};
+    }
+  };
+  flips.forEach(f=>f.onclick=()=>flipOne(f));
+  $('#all').onclick=()=>{$('#all').disabled=true;flips.forEach((f,i)=>reduced?flipOne(f):setTimeout(()=>flipOne(f),i*320))};
+}
+
+// ---------- álbum ----------
+const af={type:'all',rar:'all',own:'all'};
+function chipRow(key,opts){return `<div class="chips">${opts.map(([v,l])=>`<button class="fchip" data-k="${key}" data-v="${v}" aria-pressed="${af[key]===v}">${l}</button>`).join('')}</div>`}
+function renderAlbum(){
+  const u=Object.keys(state.cards).length;
+  let list=C.filter(c=>(af.type==='all'||c.k===af.type)&&(af.rar==='all'||c.rar===+af.rar)&&(af.own==='all'||(af.own==='have')===!!state.cards[c.id]));
+  list=list.sort((a,b)=>b.rar-a.rar||b.r-a.r||a.t.localeCompare(b.t,'pt-BR'));
+  $('#v-album').innerHTML=`
+    <div><h2>Álbum</h2><p class="muted" style="margin-top:6px">${u} de ${C.length} cartas coletadas.</p>
+      <div class="bar" style="margin-top:10px" aria-hidden="true"><i style="width:${u/C.length*100}%"></i></div></div>
+    ${chipRow('type',[['all','Tudo'],['F','Filmes'],['S','Séries']])}
+    ${chipRow('rar',[['all','Todas raridades'],...RAR.map((r,i)=>[String(i),r.n])])}
+    ${chipRow('own',[['all','Todas'],['have','Tenho'],['miss','Faltam']])}
+    <div class="grid">${list.map(c=>{const n=state.cards[c.id]||0;return `<button class="gbtn" data-id="${c.id}" aria-label="${n?esc(c.t):'Carta bloqueada'}">${cardHTML(c,!n)}${n>1?`<span class="cnt">x${n}</span>`:''}</button>`}).join('')||'<p class="muted">Nenhuma carta com esses filtros.</p>'}</div>`;
+  document.querySelectorAll('#v-album .fchip').forEach(b=>b.onclick=()=>{af[b.dataset.k]=b.dataset.v;renderAlbum()});
+  document.querySelectorAll('#v-album .gbtn').forEach(b=>b.onclick=()=>detail(BYID[b.dataset.id]));
+}
+function detail(c){
+  const n=state.cards[c.id]||0;
+  if(!n){toast('Carta bloqueada · '+RAR[c.rar].n+' · '+(c.k==='F'?'Filme':'Série'));return}
+  const L=$('#layer');
+  L.innerHTML=`<div class="modal" id="m"><div class="mb">${cardHTML(c)}
+    <dl class="facts"><dt>Raridade</dt><dd>${RAR[c.rar].n}</dd><dt>Tipo</dt><dd>${c.k==='F'?'Filme':'Série'}</dd><dt>Estreia</dt><dd>${c.y}</dd><dt>Gênero</dt><dd>${esc(c.g)}</dd>
+    ${c.d?`<dt>${c.k==='F'?'Direção':'Criação'}</dt><dd>${esc(c.d)}</dd>`:''}${c.s?`<dt>Protagonista</dt><dd>${esc(c.s)}</dd>`:''}<dt>Nota IMDb (aprox.)</dt><dd>${c.r.toFixed(1)}</dd><dt>Cópias</dt><dd>${n}</dd></dl>
+    <button class="btn ghost full" id="x">Fechar</button></div></div>`;
+  const close=()=>{L.innerHTML=''};
+  $('#x').onclick=close;$('#m').onclick=e=>{if(e.target.id==='m')close()};$('#x').focus();
+}
+addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#m'))$('#layer').innerHTML=''});
+
+function renderAll(){renderHeader();renderQuizHome();renderShop();renderAlbum()}
+
+
+// ---------- pôsteres ----------
+const CONFIG={
+  tmdbToken:'',   // opcional: cole aqui o token (ou use o campo na tela inicial)
+  posters:true    // false = só arte gerada (use ao publicar sem licença de pôsteres)
+};
+/*POSTER_START*/
+const TV_Q={'Os Simpsons':'The Simpsons','Ataque dos Titãs':'Attack on Titan','Avatar: A Lenda de Aang':'Avatar: The Last Airbender','Planeta Terra':'Planet Earth','Round 6':'Squid Game','La Casa de Papel':'Money Heist','Wandinha':'Wednesday','Chaves':'El Chavo del Ocho','Todo Mundo Odeia o Chris':'Everybody Hates Chris'};
+async function tvmazeFind(c,f){
+  const q=TV_Q[c.t]||c.t;
+  const r=await f('https://api.tvmaze.com/search/shows?q='+encodeURIComponent(q));
+  if(!r.ok)throw new Error('tvmaze '+r.status);
+  const list=await r.json();
+  const yr=s=>s.premiered?+String(s.premiered).slice(0,4):0;
+  let best=null,bd=99;
+  for(const it of list){const s=it&&it.show;if(!s||!s.image)continue;const d=Math.abs(yr(s)-c.y);if(d<=3&&d<bd){best=s;bd=d}}
+  return best?(best.image.original||best.image.medium||null):null;
+}
+async function tmdbFind(c,f,key){
+  const v4=key.length>60,opt=v4?{headers:{Authorization:'Bearer '+key}}:{};
+  const tries=[c.t];if(c.t.includes(':'))tries.push(c.t.split(':')[0].trim());
+  for(let ti=0;ti<tries.length;ti++){
+    for(const withYear of [true,false]){
+      let url='https://api.themoviedb.org/3/search/movie?language=pt-BR&query='+encodeURIComponent(tries[ti])+(withYear?'&year='+c.y:'')+(v4?'':'&api_key='+encodeURIComponent(key));
+      const r=await f(url,opt);
+      if(r.status===401||r.status===403)throw new Error('tmdb auth');
+      if(!r.ok)throw new Error('tmdb '+r.status);
+      const j=await r.json();
+      const yr=m=>m.release_date?+m.release_date.slice(0,4):0;
+      const ok=(j.results||[]).filter(m=>m.poster_path&&Math.abs(yr(m)-c.y)<=(ti===0?1:0));
+      if(ok.length)return 'https://image.tmdb.org/t/p/w342'+ok[0].poster_path;
+    }
+  }
+  return null;
+}
+/*POSTER_END*/
+const PK='claquete.posters.v1';
+let posterCache={};try{posterCache=JSON.parse(localStorage.getItem(PK))||{}}catch(e){}
+const savePosters=()=>{try{localStorage.setItem(PK,JSON.stringify(posterCache))}catch(e){}};
+function getTmdbKey(){let k=CONFIG.tmdbToken||'';try{k=k||localStorage.getItem('claquete.tmdb')||''}catch(e){}return k.trim()}
+const pend=new Set(),pq=[];let pActive=0;
+function queuePoster(c){
+  if(!CONFIG.posters||pend.has(c.id))return;
+  const e=posterCache[c.id];
+  if(e&&(e.u||Date.now()-e.t<864e5))return;
+  if(c.k==='F'&&!getTmdbKey())return;
+  pend.add(c.id);pq.push(c);pump();
+}
+function pump(){
+  while(pActive<3&&pq.length){
+    const c=pq.shift();pActive++;
+    (async()=>{
+      let u=null,fail=false;
+      try{u=c.k==='S'?await tvmazeFind(c,(a,b)=>fetch(a,b)):await tmdbFind(c,(a,b)=>fetch(a,b),getTmdbKey())}catch(e){fail=true}
+      pend.delete(c.id);
+      if(!fail){posterCache[c.id]={u,t:Date.now()};savePosters();if(u)applyPoster(c.id,u)}
+      pActive--;pump();
+    })();
+  }
+}
+function applyPoster(id,u){
+  document.querySelectorAll('.card[data-pid="'+id+'"]').forEach(card=>{
+    if(card.querySelector('.poster'))return;
+    const img=new Image();img.className='poster';img.alt='';img.referrerPolicy='no-referrer';
+    img.onload=()=>{card.insertBefore(img,card.firstChild);card.classList.add('has-poster')};
+    img.onerror=()=>posterFailed(null,id);
+    img.src=u;
+  });
+}
+function posterFailed(img,id){
+  const card=img&&img.closest('.card');id=id||(card&&card.dataset.pid);
+  if(img){const cd=img.closest('.card');img.remove();if(cd)cd.classList.remove('has-poster')}
+  if(id){posterCache[id]={u:null,t:Date.now()};savePosters()}
+}
+function bindPosterPanel(){
+  const s=$('#tks'),r=$('#tkr');if(!s)return;
+  s.onclick=()=>{
+    const v=($('#tk').value||'').trim();if(!v){toast('Cole o token primeiro');return}
+    try{localStorage.setItem('claquete.tmdb',v)}catch(e){}
+    for(const id in posterCache)if(!posterCache[id].u)delete posterCache[id];savePosters();
+    toast('Token salvo. Os pôsteres de filmes vão aparecer nas cartas que você tem.');renderAll();
+  };
+  if(r)r.onclick=()=>{try{localStorage.removeItem('claquete.tmdb')}catch(e){}toast('Token removido');renderAll()};
+}
+
+// ---------- início ----------
+state=norm(lsGet());
+renderAll();
+show(location.hash.slice(1)||'quiz');
+
+</script>
+
+</body>
+</html>
